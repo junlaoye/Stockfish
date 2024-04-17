@@ -1,8 +1,35 @@
-- name: Upload coverage reports to Codecov
-  uses: codecov/codecov-action@v4.0.1
-  with:
-    token: ${{ secrets.CODECOV_TOKEN }}
-    slug: junlaoye/Stockfish
+name: Code Coverage
 
+on: [push, pull_request]
 
+jobs:
+  build-and-coverage:
+    runs-on: ubuntu-latest
 
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: sudo apt-get install lcov
+
+    - name: Build with Coverage Flags
+      run: |
+        make build ARCH=x86-64-modern CXXFLAGS='-fprofile-arcs -ftest-coverage'
+
+    - name: Run Tests
+      run: |
+        ./stockfish  # replace this with the actual test command
+
+    - name: Collect Coverage Data
+      run: |
+        lcov --capture --directory . --output-file coverage.info
+
+    - name: Generate HTML Report
+      run: |
+        genhtml coverage.info --output-directory out
+
+    - name: Archive Coverage Results
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage-report
+        path: out/
